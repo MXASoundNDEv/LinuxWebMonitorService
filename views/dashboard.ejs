@@ -1,0 +1,216 @@
+<!-- dashboard.ejs -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Monitoring</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/smoothie-chart.js"></script>
+  <script src="/js/save-settngs.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Dashboard de Monitoring</h1>
+  </header>
+
+  <section class="metrics">
+    <div class="chart-container">
+      <h2>Utilisation CPU</h2>
+      <canvas id="cpuChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Utilisation Mémoire</h2>
+      <canvas id="memoryChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Température CPU</h2>
+      <canvas id="temperatureChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Utilisation du Disque</h2>
+      <canvas id="diskChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Réseau</h2>
+      <canvas id="networkChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Batterie</h2>
+      <canvas id="batteryChart" width="800" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Uptime</h2>
+      <p id="uptimeText"></p>
+    </div>
+  </section>
+
+  <button id="settingsButton" onclick="toggleSettingsPanel()">⚙️</button>
+
+  <div id="settingsPanel">
+    <h3>Paramètres du Dashboard</h3>
+    <label>
+      Couleur du Dashboard:
+      <input type="color" id="dashboardColor">
+    </label>
+    <label>
+      <input type="checkbox" class="chart-checkbox" checked> Afficher Utilisation CPU
+    </label>
+    <label>
+      <input type="checkbox" class="chart-checkbox" checked> Afficher Utilisation Mémoire
+    </label>
+    <label>
+      <input type="checkbox" class="chart-checkbox" checked> Afficher Température CPU
+    </label>
+    <label>
+      <input type="checkbox" class="chart-checkbox" checked> Afficher Utilisation du Disque
+    </label>
+    <label>
+      <input type="checkbox" class="chart-checkbox" checked> Afficher Réseau
+    </label>
+    <button onclick="saveSettings()">Sauvegarder</button>
+  </div>
+
+  <section class="services">
+    <h2>Services Actifs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nom du Service</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (services || []).forEach(function(service) { %>
+          <tr class="<%= service.active !== 'active' ? 'inactive-service' : '' %>">
+            <td><%= service.unit %></td>
+            <td><%= service.active %></td>
+            <td>
+              <button onclick="manageService('<%= service.unit %>', 'start')">Start</button>
+              <button onclick="manageService('<%= service.unit %>', 'stop')">Stop</button>
+              <button onclick="manageService('<%= service.unit %>', 'restart')">Restart</button>
+              <button onclick="viewLogs('<%= service.unit %>')">Logs</button>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </section>
+
+  <div id="logModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Logs du Service</h2>
+      <pre id="serviceLogs"></pre>
+    </div>
+  </div>
+
+  <script>
+  window.onload = function() {
+    const chartconf = {grid:{borderVisible:false},tooltip:true,tooltipLine:{strokeStyle:'#bbbbbb'}}
+    const TimeSeriesConf = {lineWidth:2.5,strokeStyle:'#00ff00',interpolation:'bezier',fillStyle:'rgba(255,0,0,0.33)'}
+    var cpuChart = new SmoothieChart(chartconf);
+    var memoryChart = new SmoothieChart(chartconf);
+    var temperatureChart = new SmoothieChart(chartconf);
+    var diskChart = new SmoothieChart(chartconf);
+    var networkChart = new SmoothieChart(chartconf);
+    var batteryChart = new SmoothieChart(chartconf);
+
+    var cpuSeries = new TimeSeries();
+    var memorySeries = new TimeSeries();
+    var temperatureSeries = new TimeSeries();
+    var diskSeries = new TimeSeries();
+    var networkSeries = new TimeSeries();
+    var batterySeries = new TimeSeries();
+
+    cpuChart.addTimeSeries(cpuSeries, TimeSeriesConf);
+    memoryChart.addTimeSeries(memorySeries, TimeSeriesConf);
+    temperatureChart.addTimeSeries(temperatureSeries, TimeSeriesConf);
+    diskChart.addTimeSeries(diskSeries, TimeSeriesConf);
+    networkChart.addTimeSeries(networkSeries, TimeSeriesConf);
+    batteryChart.addTimeSeries(batterySeries, TimeSeriesConf);
+
+    cpuChart.streamTo(document.getElementById('cpuChart'), 1000);
+    memoryChart.streamTo(document.getElementById('memoryChart'), 1000);
+    temperatureChart.streamTo(document.getElementById('temperatureChart'), 1000);
+    diskChart.streamTo(document.getElementById('diskChart'), 1000);
+    networkChart.streamTo(document.getElementById('networkChart'), 1000);
+    batteryChart.streamTo(document.getElementById('batteryChart'), 1000);
+
+    function updateMetrics() {
+      fetch('/metrics').then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      }).then(data => {
+        cpuSeries.append(new Date().getTime(), parseFloat(data.cpu.toFixed(2)));
+        memorySeries.append(new Date().getTime(), parseFloat(data.memory.toFixed(2)));
+        temperatureSeries.append(new Date().getTime(), parseFloat(data.temperature.toFixed(2)));
+        batterySeries.append(new Date().getTime(), data.battery);
+        diskSeries.append(new Date().getTime(), parseFloat(data.diskUsage[0].usage.toFixed(2)));
+        networkSeries.append(new Date().getTime(), parseFloat(data.network[0].rx.toFixed(2)));
+        
+        // Uptime Update
+        document.getElementById('uptimeText').textContent = `Uptime: ${data.uptime} seconds`;
+      }).catch(error => {
+        console.error('Erreur lors de la mise à jour des métriques:', error);
+      });
+    }
+
+    setInterval(updateMetrics, 1000);
+  };
+
+    function manageService(serviceName, action) {
+    fetch(`/service/${serviceName}/${action}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(result => {
+      alert(result);
+      location.reload(); // Recharger la page pour mettre à jour l'état des services
+    })
+    .catch(error => {
+      console.error('Erreur lors de l\'action sur le service:', error);
+      alert('Erreur lors de l\'action sur le service');
+    });
+  }
+
+  function viewLogs(serviceName) {
+    fetch(`/service/${serviceName}/logs`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(logs => {
+      document.getElementById('serviceLogs').textContent = logs;
+      document.getElementById('logModal').style.display = 'block';
+    })
+    .catch(error => {
+      console.error('Erreur lors de la récupération des logs du service:', error);
+      alert('Erreur lors de la récupération des logs du service');
+    });
+  }
+
+  function toggleSettingsPanel() {
+    const panel = document.getElementById('settingsPanel');
+    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+  }
+
+  function closeModal() {
+    document.getElementById('logModal').style.display = 'none';
+  }
+  </script>
+</body>
+</html>

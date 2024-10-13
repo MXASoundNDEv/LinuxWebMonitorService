@@ -1,0 +1,21 @@
+{
+    "name": "raspi-monitor-dashboard",
+    "version": "1.0.0",
+    "description": "Dashboard de monitoring pour Raspberry Pi utilisant systemd",
+    "main": "app.js",
+    "scripts": {
+      "start": "node app.js",
+      "dev": "nodemon app.js"
+    },
+    "dependencies": {
+      "express": "^4.17.1",
+      "systeminformation": "^5.9.11",
+      "ejs": "^3.1.6",
+      "dotenv": "^10.0.0"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.22"
+    },
+    "author": "MXA",
+    "license": "ISC"
+}

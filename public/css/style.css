@@ -1,0 +1,180 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background: #333;
+  color: #fff;
+  padding: 10px 0;
+  text-align: center;
+}
+
+.metrics, .services {
+  width: 80%;
+  margin: 20px auto;
+}
+
+div.smoothie-chart-tooltip {
+  background: #444;
+  padding: 1em;
+  margin-top: 20px;
+  font-family: consolas;
+  color: white;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.chart-container {
+  margin-bottom: 20px;
+}
+
+.chart-container h2 {
+  text-align: center;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table, th, td {
+  border: 1px solid #ddd;
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background-color: #333;
+  color: white;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border: none;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #555;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 70%;
+  max-height: 70%;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.close {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #333;
+}
+
+.close:hover {
+  color: #000;
+}
+
+#serviceLogs {
+  white-space: pre-wrap; /* Permet de conserver les sauts de ligne */
+  background-color: #f4f4f4;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  max-height: 60vh; /* Limite la hauteur des logs */
+  overflow-y: scroll; /* Ajoute un défilement pour les longs logs */
+}
+
+.inactive-service {
+  background-color: #f8d7da; /* Fond rouge clair pour les services inactifs */
+  color: #721c24; /* Texte rouge foncé pour améliorer la visibilité */
+}
+
+/* Bouton Paramètres sticky */
+#settingsButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2000;
+}
+
+#settingsButton:hover {
+  background-color: #555;
+}
+
+/* Fenêtre de paramètres */
+#settingsPanel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  max-height: 400px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: none;
+  z-index: 1500;
+}
+
+#settingsPanel h3 {
+  margin-top: 0;
+  font-size: 1.2em;
+}
+
+#settingsPanel label {
+  display: block;
+  margin: 10px 0;
+}
+
+#settingsPanel input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+#settingsPanel input[type="color"] {
+  margin-left: 10px;
+}
+
