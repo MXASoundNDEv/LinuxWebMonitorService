@@ -6,7 +6,7 @@ After=network.target
 User=user
 Environment=NVM_DIR=/home/user/.nvm
 ExecStart=/home/user/.nvm/versions/node/vXX.XX.XX/bin/node /usr/local/bin/npm start
-WorkingDirectory=/home/user/raspi-monitor-dashboard
+WorkingDirectory=/home/user/monitor-dashboard
 Restart=always
 RestartSec=10
 StartLimitInterval=0
