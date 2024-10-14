@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const si = require('systeminformation');
 const fs = require('fs');
 const path = require('path');
+const { log } = require('console');
 
 require('dotenv').config();
 
@@ -13,22 +14,28 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
-
-// DBus configuration
-const bus = dbus.systemBus();
-const systemd = bus.getProxyObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1');
-const manager = systemd.getInterface('org.freedesktop.systemd1.Manager');
-
-
+app.use(express.json()); // Permet de parser les données JSON dans les requêtes POST
 
 // Route principale du dashboard
 app.get('/', async (req, res) => {
 	try {
 		const metrics = await getServerMetrics();
-		const services = await getServiceList();
-		res.render('dashboard', { metrics, services, error: null });
+		exec('systemctl list-units --type=service --no-pager --output=json', (err, stdout, stderr) => {
+			if (err) {
+				res.status(500).send('Erreur lors de la récupération des services');
+			} else {
+				const services = JSON.parse(stdout).map(service => ({
+					unit: service.unit,
+					load: service.load,
+					active: service.active,
+					sub: service.sub,
+					description: service.description
+				}));
+				res.render('dashboard', { metrics, services, error: null });
+			}
+		});
 	} catch (error) {
-		res.status(500).send('Erreur lors de la collecte des métriques ou des services');
+		res.status(500).send('Erreur lors de la collecte des métriques');
 	}
 });
 
@@ -43,32 +50,37 @@ app.get('/metrics', async (req, res) => {
 });
 
 // Route pour afficher les détails d'un service
-app.get('/service/:name', async (req, res) => {
+app.get('/service/:name/details', async (req, res) => {
 	const serviceName = req.params.name;
-	try {
-	  const serviceStatus = await manager.GetUnit(serviceName);
-	  res.send(`Status du service ${serviceName}: ${JSON.stringify(serviceStatus)}`);
-	} catch (error) {
-	  res.status(404).send('Service non trouvé');
-	}
-  });
+	console.log(`Tentative de récupération des détails pour le service : ${serviceName}`);
+	exec(`systemctl status ${serviceName}`, (err, stdout, stderr) => {
+		if (err) {
+			res.status(404).send('Service non trouvé');
+			console.error("Details Error : ", err);
+		} else {
+			res.setHeader('Content-Type', 'text/plain');
+			res.send(stdout);
+		}
+	});
+});
 
-// Action sur les services : start, stop, restart
-app.post('/service/:name/:action', (req, res) => {
+// Route pour effectuer une action sur un service (start/stop/restart)
+app.post('/service/:name/:action', async (req, res) => {
 	const { name, action } = req.params;
-	const validActions = ['start', 'stop', 'restart'];
-	console.log(name, action);
+	const { password } = req.body;
+	console.log(`Tentative de ${action} du service : ${name} avec le mdp ${password}`);	
 
+	// Valide l'action demandée
+	const validActions = ['start', 'stop', 'restart'];
 	if (!validActions.includes(action)) {
 		return res.status(400).send('Action non valide');
 	}
 
-	exec(`sudo systemctl ${action} ${name}`, (err, stdout, stderr) => {
+	// Exécute la commande pour gérer le service
+	exec(`ehco ${password} | sudo -S systemctl ${action} ${name}`, (err, stdout, stderr) => {
 		if (err) {
-			return res.status(500).send(`Erreur lors de l'action ${action} sur le service: ${stderr}`);
+			return res.status(500).send(`Erreur lors de l'action ${action} sur le service`);
 		}
-		if (stdout) console.log(stdout);
-
 		res.send(`Service ${name} ${action} avec succès`);
 	});
 });
@@ -79,6 +91,7 @@ app.get('/service/:name/logs', async (req, res) => {
 	exec(`journalctl -u ${serviceName} --no-pager`, (err, stdout, stderr) => {
 		if (err) {
 			res.status(404).send('Erreur lors de la récupération des logs du service');
+			console.error("Logs Error : ", err);
 		} else {
 			res.send(stdout);
 		}
@@ -109,27 +122,9 @@ async function getServerMetrics() {
 			tx: n.tx_bytes
 		})),
 		battery: battery.percent,
-		uptime: uptime.uptime
+		uptime: uptime.uptime / 60
 	};
 }
-
-// Obtenir la liste des services via DBus
-async function getServiceList() {
-	try {
-		const units = await manager.ListUnits();
-		return units.filter(unit => unit[0].endsWith('.service')).map(unit => ({
-			unit: unit[0],
-			description: unit[1],
-			load: unit[2],
-			active: unit[3],
-			sub: unit[4],
-		}));
-	} catch (error) {
-		console.error('Erreur lors de la récupération de la liste des services:', error);
-		throw new Error('Impossible de récupérer la liste des services');
-	}
-}
-
 
 // Démarrage de l'application
 app.listen(PORT, () => {

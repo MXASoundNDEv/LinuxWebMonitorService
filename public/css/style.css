@@ -122,6 +122,12 @@ button:hover {
 }
 
 .inactive-service {
+  background-color: #fff3cd; /* Fond jaune clair pour les alertes de mise en garde */
+  color: #856404; /* Texte jaune foncé pour améliorer la visibilité */
+
+}
+
+.disabled-service {
   background-color: #f8d7da; /* Fond rouge clair pour les services inactifs */
   color: #721c24; /* Texte rouge foncé pour améliorer la visibilité */
 }
