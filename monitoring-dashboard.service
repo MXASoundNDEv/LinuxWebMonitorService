@@ -3,12 +3,10 @@ Description=Application de monitoring
 After=network.target
 
 [Service]
-User=mxa
-Group=mxa
-Environment=NODE_ENV=production
-Environment=NVM_DIR=/home/mxa/.nvm
-ExecStart=/bin/bash -c 'source $NVM_DIR/nvm.sh && cd /home/mxa/server-monitor && nvm use 16 && npm start'
-WorkingDirectory=/home/mxa/server-monitor
+User=user
+Environment=NVM_DIR=/home/user/.nvm
+ExecStart=/home/user/.nvm/versions/node/vXX.XX.XX/bin/node /usr/local/bin/npm start
+WorkingDirectory=/home/user/raspi-monitor-dashboard
 Restart=always
 RestartSec=10
 StartLimitBurst=5
